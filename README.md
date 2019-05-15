@@ -1,12 +1,12 @@
 # Data Visualization for Features Comparison Using JavaScript Library D3.js
 
-The HTML file is developed in Brackets using the JavaScript library D3.js to dynamically show and compare the features between two groups of patients using the top-2 principle components (PCs). The interactive interfaces helps view and compare data in a easy and meaningful ways by clicking dots directly, dragging slider, clicking buttons, choosing subgroup through drop-down list. The visualization helps on feature engineering and selection.
+The HTML file uses the JavaScript library D3.js to dynamically visualize and compare the features and top-2 principle components (PCs) between two groups of patients. The interactive interfaces helps view and compare data in an easy and meaningful way. Interactive options include clicking dots directly, dragging slider, clicking buttons, choosing subgroup from a drop-down list. The visualization is a useful tool for feature engineering and/or selection.
 
 ## Visualization and Description
 
-In the interface, when click one dot, correspondingly, the normalized mean and one standard deviationtop-10 features  will show. In order to obtain the real values for each dot, just mouse over the dot, then the information box will show those values for this highlighted dot.
+In the interface, top-2 PCs are shown as dots on the left to show a overview of the data set. When one dot is clicked, the normalized mean, one standard deviation, and top-10 features (normalized) corresponding to the dot will show on the right. To see the original values for each dot, just move the mouse over the dot. An information box will show those values for this highlighted dot.
 
-When switching from all the patients (orange and blue dots) to the patients only having events for real (green and red dots), just choose the corresponding group from the drop-down list, then the switcing will be fulfilled in the same scatter plot region. It means only one big scatter plot and two small top-10 feature scatter plots exist.
+To switch the left graph between all the patients (orange and blue dots) to the patients that were moved to ICU (green and red dots), we just choose the corresponding group from the drop-down list. All the dots in the left graph will be updated accordingly. This means that only one larger scatter plot on the left and two smaller top-10 feature scatter plots on the right are sufficient to present the data.
 
 The snapshots for the dynamic interface can be found from the following poster.
 
