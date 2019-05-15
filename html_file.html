@@ -1,0 +1,1075 @@
+<html lang = "en">
+	<head>
+		<meta charset = "utf-8">
+		<title>Scatterplot</title>
+		<style>
+        .dot {
+          stroke: #cccccc;
+        }
+        circle {
+            opacity: 0.6;
+            stroke: #000000;
+            background-color: #cccccc;
+        }
+            
+        .div1 {
+            width: 600;
+            float: left;
+        }
+            
+        .div2 {
+            width: 600;
+            float: left;
+        }
+        
+        .slider{
+            width: 460;
+        }
+        
+        button {
+            padding: 5px;
+			border: 1px solid #ccc;
+			border-radius: 10px;
+			cursor: pointer;
+        }
+            
+        #tooltip {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: auto;
+            visibility: hidden;
+            font-size: 10px;
+            background-color: beige;
+            padding: 10px;
+            box-shadow: 3px 3px 3px #cccccc;
+            border-radius: 3px;
+            text-align: left;
+        }
+            
+        </style>
+        
+        <script src="http://d3js.org/d3.v5.min.js"></script>
+		<script type = "text/javascript">
+		
+		//width and height
+		var w = 600;
+        var w2 = 600;
+		var h = 550;
+        var h2 = 330;
+		var padding = 50;
+        var padding2 = 100;
+            
+        // load data
+        d3.csv("X_test_use_2.csv", function(d) {return d;}).then(function(d) {
+                dataset = d;
+                dataset.forEach(function(d) {
+                    d.PC1 = +d.PC1;
+                    d.PC2 = +d.PC2;
+                    if (d.y == 'True') {
+                        d.y = 1;
+                    } else if (d.y == 'False') {
+                        d.y = 0;
+                    };
+                    d.Index = d.Index;
+                });
+                
+                // get indecies for each instance
+                index_array = []
+                for (var i = 0; i < dataset.length; i++) {
+                    index_array.push(dataset[i]['Index'])
+                }
+            
+                //console.log(index_array)
+            
+                // select an instance
+                var default_index = 1;
+                column_to_plot = ["BLOOD_UREA_NITROGEN","n_edrk","HEMOGLOBIN","PLATELET_COUNT","GLUCOSE","PHOSPHORUS","Pulse","WHITE_BLOOD_CELL_COUNT","Resp","O2_Flow"]
+                column_to_show = ["BUN", "EDRK", "HEMO", "PLATELET", "GLUCOSE","PHO","Pulse", "WBCC", "Resp","O2"]
+                column_to_info = ["BLOOD_UREA_NITROGEN_raw","n_edrk_raw","HEMOGLOBIN_raw","PLATELET_COUNT_raw","GLUCOSE_raw","PHOSPHORUS_raw","Pulse_raw","WHITE_BLOOD_CELL_COUNT_raw","Resp_raw","O2_Flow_raw"]
+                console.log(column_to_plot.length)
+                instance = []
+                for (var i = 0; i < column_to_plot.length; i++) {
+                    a_dict = {}
+                    a_dict['x'] = i;
+                    a_dict['y'] = +d[default_index][column_to_plot[i]];
+                    instance.push(a_dict);
+                };
+                //console.log(instance)
+            
+                // compute average for event and non-event patients
+                event_avg = [];
+                nonevent_avg = [];
+                ymax = 6;
+                ymin = 3;
+                for (var i = 0; i < column_to_plot.length; i++) {
+                    var temp_event = 0.;
+                    var count_event = 0;
+                    var temp_nonevent = 0.;
+                    var count_nonevent = 0;
+                    for (var k = 0; k < dataset.length; k++) {
+                        var value = Number(dataset[k][column_to_plot[i]]);
+                        if (dataset[k]['y'] == 1) {
+                            temp_event = temp_event + value;
+                            count_event = count_event + 1;
+                        } else {
+                            temp_nonevent = temp_nonevent + value;
+                            count_nonevent = count_nonevent + 1;
+                        };
+                        if (ymax < value) {
+                            ymax = value;
+                        };
+                        if (ymin > value) {
+                            ymin = value;
+                        };
+                    };
+                    temp_event = temp_event/count_event;
+                    temp_nonevent = temp_nonevent/count_nonevent;
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = temp_event;
+                    event_avg.push(a_dict);
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = temp_nonevent;
+                    nonevent_avg.push(a_dict);
+                };
+            
+                // compute std for event and non-event patients
+                event_upper = [];
+                event_lower = [];
+                nonevent_upper = [];
+                nonevent_lower = [];
+                for (var i = 0; i < column_to_plot.length; i++) {
+                    var temp_event = 0.;
+                    var count_event = 0;
+                    var temp_nonevent = 0.;
+                    var count_nonevent = 0;
+                    for (var k = 0; k < dataset.length; k++) {
+                        var value = Number(dataset[k][column_to_plot[i]]);
+                        if (dataset[k]['y'] == 1) {
+                            temp_event = temp_event + Math.pow(value - event_avg[i]['y'], 2);
+                            count_event = count_event + 1;
+                        } else {
+                            temp_nonevent = temp_nonevent + Math.pow(value - nonevent_avg[i]['y'],2);
+                            count_nonevent = count_nonevent + 1;
+                        };
+                    };
+                    temp_event = temp_event/count_event;
+                    temp_nonevent = temp_nonevent/count_nonevent;
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = event_avg[i]['y'] + Math.sqrt(temp_event);
+                    event_upper.push(a_dict);
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = event_avg[i]['y'] - Math.sqrt(temp_event);
+                    event_lower.push(a_dict);
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = nonevent_avg[i]['y'] + Math.sqrt(temp_nonevent);
+                    nonevent_upper.push(a_dict);
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = nonevent_avg[i]['y'] - Math.sqrt(temp_nonevent);
+                    nonevent_lower.push(a_dict);
+                };
+                
+            
+                // compute averge for correctly and incorrectly predict events
+                correct_avg = [];
+                incorrect_avg = [];
+                for (var i = 0; i < column_to_plot.length; i++) {
+                    var temp_event = 0.;
+                    var count_event = 0;
+                    var temp_nonevent = 0.;
+                    var count_nonevent = 0;
+                    for (var k = 0; k < dataset.length; k++) {
+                        var value = Number(dataset[k][column_to_plot[i]]);
+                        if (dataset[k]['y'] == 1 && dataset[k]['y_pred'] == 'True') {
+                            temp_event = temp_event + value;
+                            count_event = count_event + 1;
+                        } else if (dataset[k]['y'] == 1 && dataset[k]['y_pred'] == 'False') {
+                            temp_nonevent = temp_nonevent + value;
+                            count_nonevent = count_nonevent + 1;
+                        };
+                    };
+                    temp_event = temp_event/count_event;
+                    temp_nonevent = temp_nonevent/count_nonevent;
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = temp_event;
+                    correct_avg.push(a_dict);
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = temp_nonevent;
+                    incorrect_avg.push(a_dict);
+                };
+            
+                // compute std for correctly and incorrectly predict events
+                correct_upper = [];
+                correct_lower = [];
+                incorrect_upper = [];
+                incorrect_lower = [];
+                for (var i = 0; i < column_to_plot.length; i++) {
+                    var temp_event = 0.;
+                    var count_event = 0;
+                    var temp_nonevent = 0.;
+                    var count_nonevent = 0;
+                    for (var k = 0; k < dataset.length; k++) {
+                        var value = Number(dataset[k][column_to_plot[i]]);
+                        if (dataset[k]['y'] == 1 && dataset[k]['y_pred'] == 'True') {
+                            temp_event = temp_event + Math.pow(value - correct_avg[i]['y'], 2);
+                            count_event = count_event + 1;
+                        } else if (dataset[k]['y'] == 1 && dataset[k]['y_pred'] == 'False') {
+                            temp_nonevent = temp_nonevent + Math.pow(value - incorrect_avg[i]['y'],2);
+                            count_nonevent = count_nonevent + 1;
+                        };
+                    };
+                    temp_event = temp_event/count_event;
+                    temp_nonevent = temp_nonevent/count_nonevent;
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = correct_avg[i]['y'] + Math.sqrt(temp_event);
+                    correct_upper.push(a_dict);
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = correct_avg[i]['y'] - Math.sqrt(temp_event);
+                    correct_lower.push(a_dict);
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = incorrect_avg[i]['y'] + Math.sqrt(temp_nonevent);
+                    incorrect_upper.push(a_dict);
+                    a_dict = {};
+                    a_dict['x'] = i;
+                    a_dict['y'] = incorrect_avg[i]['y'] - Math.sqrt(temp_nonevent);
+                    incorrect_lower.push(a_dict);
+                };
+                draw();});
+            
+            // function to reduce opacity for all the circles
+            function dimAll_change_color() {
+                var circles = d3.selectAll(".left")
+                    .data(dataset)
+                    .style("opacity", 0.1)
+                    .attr("r",10)
+                    .style("fill", function(d) {
+                        if (d["y"] == 1) {
+                            return color(cValue[1]);
+                        } else {
+                            return color(cValue[0]);
+                        }; 
+                    })
+            };
+            function dimAll() {
+                var circles = d3.selectAll(".left")
+                    .data(dataset)
+                    .style("opacity", 0.1)
+                    .attr("r",10)
+            };
+            // function to recover opacity for all the circles
+            function undimAll_change_color() {
+                svg2.selectAll(".right_bottom").remove();
+                svg3.selectAll(".right_top").remove();
+                svg2.selectAll(".right_path").remove();
+                svg3.selectAll(".right_path").remove();
+                svg2.selectAll(".right_title").remove();
+                svg3.selectAll(".right_title").remove();
+                svg.selectAll(".left").remove()
+                svg.selectAll("circle")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d) {
+                    return xScale(d.PC1);
+                })
+                .attr("cy", function(d) {
+                    return yScale(d.PC2);
+                })
+                .attr("r", 10)
+                .attr("fill", function(d) {
+                if (d.y == 1) {
+                    return color(cValue[1]);
+                } else if (d.y == 0) {
+                    return color(cValue[0]);
+                }})
+                .attr("class", "left")
+                .attr("id", function(d) {
+                    return "c"+d.Index; // d3.select does not like numeric ids, added a character at the beginning
+                });            
+            
+                svg.selectAll(".left").data(dataset).on("mouseover", highlight).on("mouseout", unhighlight).on('click', isolate);
+
+                
+            };
+            function undimAll() {
+                var circles = d3.selectAll(".left")
+                    .data(dataset)
+                    .style("opacity", 0.6)
+                    .attr("r",10)
+            };
+            // function to isolate the clicked circle
+            function isolate(d, i) {
+                dimAll();
+                //console.log(i)
+                //console.log(this)
+               
+                if(this) {
+                        var selected_group = d3.select(this).style("opacity", 0.6).attr("r", 15);
+
+                        var selected_color = this.getAttribute("fill");
+
+                        // update intance data
+                        instance = []
+                        for (var k = 0; k < column_to_plot.length; k++) {
+                            a_dict = {}
+                            a_dict['x'] = k;
+                            a_dict['y'] = +dataset[i][column_to_plot[k]];
+                            instance.push(a_dict);
+                        };
+
+                        // event case
+                        if (dataset[i]['y'] == 1) {
+                            svg2.selectAll(".right_bottom").remove();
+                            svg2.selectAll("circle")
+                            .data(instance)
+                            .enter()
+                            .append("circle")
+                            .attr("cx", function(d) {
+                                return xScale2(d.x);
+                            })
+                            .attr("cy", function(d) {
+                                return h2 - yScale2(d.y);
+                            })
+                            .attr("r", 5)
+                            .attr("fill", selected_color)
+                            .attr("class", "right_bottom");
+                        }
+
+                        // non-event case
+                        if (dataset[i]['y'] == 0) {
+                            svg3.selectAll(".right_top").remove();
+                            svg3.selectAll("circle")
+                            .data(instance)
+                            .enter()
+                            .append("circle")
+                            .attr("cx", function(d) {
+                                return xScale2(d.x);
+                            })
+                            .attr("cy", function(d) {
+                                return h2 - yScale2(d.y);
+                            })
+                            .attr("r", 5)
+                            .attr("fill", selected_color)
+                            .attr("class", "right_top");
+                        }
+
+                        // plot average
+                        var avg_line = d3.line()
+                                     .x(function(d) {return xScale2(d.x);})
+                                     .y(function(d) {return h2 - yScale2(d.y);})
+                                     .curve(d3.curveMonotoneX);
+
+                        svg2.selectAll('.right_path').remove();
+                        svg2.append('path')
+                            .datum(event_avg)
+                            .attr('d', avg_line)
+                            .style('stroke', 'black')
+                            .style('stroke-width', 1.5)
+                            .style('fill', 'none')
+                            .attr('class', 'right_path');
+
+                        svg2.append('path')
+                            .datum(event_upper)
+                            .attr('d', avg_line)
+                            .style('stroke', 'gray')
+                            .style('fill', 'none')
+                            .attr('class', 'right_path');
+
+                        svg2.append('path')
+                            .datum(event_lower)
+                            .attr('d', avg_line)
+                            .style('stroke', 'gray')
+                            .style('fill', 'none')
+                            .attr('class', 'right_path');
+                        // title
+                        svg2.selectAll(".right_title").remove();
+                        svg2.append("text")             
+                            .attr("transform", "translate("+w2/2+"," + (padding - 10) + ")")
+                            .style("text-anchor", "middle")
+                            .text("Features for an event patient")
+                            .attr("class", "right_title");
+                        // plot average
+                        var avg_line = d3.line()
+                                     .x(function(d) {return xScale2(d.x);})
+                                     .y(function(d) {return h2 - yScale2(d.y);})
+                                     .curve(d3.curveMonotoneX);
+                        svg3.selectAll('.right_path').remove();
+                        svg3.append('path')
+                            .datum(nonevent_avg)
+                            .attr('d', avg_line)
+                            .style('stroke', 'black')
+                            .style('stroke-width', 1.5)
+                            .style('fill', 'none')
+                            .attr('class', 'right_path');
+
+                        svg3.append('path')
+                            .datum(nonevent_upper)
+                            .attr('d', avg_line)
+                            .style('stroke', 'gray')
+                            .style('fill', 'none')
+                            .attr('class', 'right_path');
+
+                        svg3.append('path')
+                            .datum(nonevent_lower)
+                            .attr('d', avg_line)
+                            .style('stroke', 'gray')
+                            .style('fill', 'none')
+                            .attr('class', 'right_path');
+                        // title
+                        svg3.selectAll(".right_title").remove();
+                        svg3.append("text")             
+                            .attr("transform", "translate("+w2/2+"," + (padding - 10) + ")")
+                            .style("text-anchor", "middle")
+                            .text("Features for an non-event patient")
+                            .attr("class", "right_title");
+                    
+                        } else {
+                            undimAll();
+                        }
+
+                    };
+            
+            function isolate_prediction(d, i) {
+                dimAll();
+                //console.log(i)
+                //console.log(this)
+               
+                if(this) {
+                    var selected_group = d3.select(this).style("opacity", 0.6).attr("r", 15);
+    
+                    var selected_color = this.getAttribute("fill");
+
+                    // update intance data
+                    instance = []
+                    for (var k = 0; k < column_to_plot.length; k++) {
+                        a_dict = {}
+                        a_dict['x'] = k;
+                        a_dict['y'] = +dataset[i][column_to_plot[k]];
+                        instance.push(a_dict);
+                    };
+                    
+                    // correctly predcited event
+                    if (dataset[i]['y'] == 1 && dataset[i]['y_pred'] == "True") {
+                        svg2.selectAll(".right_bottom").remove();
+                        svg2.selectAll("circle")
+                        .data(instance)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function(d) {
+                            return xScale2(d.x);
+                        })
+                        .attr("cy", function(d) {
+                            return h2 - yScale2(d.y);
+                        })
+                        .attr("r", 5)
+                        .attr("fill", color(cValue[2]))
+                        .attr("class", "right_bottom");
+                    }
+                    
+                    // non-event case
+                    if (dataset[i]['y'] == 1 && dataset[i]['y_pred'] == "False") {
+                        svg3.selectAll(".right_top").remove();
+                        svg3.selectAll("circle")
+                        .data(instance)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function(d) {
+                            return xScale2(d.x);
+                        })
+                        .attr("cy", function(d) {
+                            return h2 - yScale2(d.y);
+                        })
+                        .attr("r", 5)
+                        .attr("fill", color(cValue[3]))
+                        .attr("class", "right_top");
+                    }
+                    
+                    // plot average
+                    var avg_line = d3.line()
+                                 .x(function(d) {return xScale2(d.x);})
+                                 .y(function(d) {return h2 - yScale2(d.y);})
+                                 .curve(d3.curveMonotoneX);
+                    svg2.selectAll('.right_path').remove();
+                    svg2.append('path')
+                        .datum(correct_avg)
+                        .attr('d', avg_line)
+                        .style('stroke', 'black')
+                        .style('stroke-width', 1.5)
+                        .style('fill', 'none')
+                        .attr('class', 'right_path');
+
+                    svg2.append('path')
+                        .datum(correct_upper)
+                        .attr('d', avg_line)
+                        .style('stroke', 'gray')
+                        .style('fill', 'none')
+                        .attr('class', 'right_path');
+
+                    svg2.append('path')
+                        .datum(correct_lower)
+                        .attr('d', avg_line)
+                        .style('stroke', 'gray')
+                        .style('fill', 'none')
+                        .attr('class', 'right_path');
+                    // title
+                    svg2.selectAll(".right_title").remove();
+                    svg2.append("text")             
+                        .attr("transform", "translate("+w2/2+"," + (padding - 10) + ")")
+                        .style("text-anchor", "middle")
+                        .text("Features for an correctly-predicted event patient")
+                        .attr("class", "right_title");
+                    
+                    // plot average
+                    var avg_line = d3.line()
+                                 .x(function(d) {return xScale2(d.x);})
+                                 .y(function(d) {return h2 - yScale2(d.y);})
+                                 .curve(d3.curveMonotoneX);
+                    svg3.selectAll('.right_path').remove();
+                    svg3.append('path')
+                        .datum(incorrect_avg)
+                        .attr('d', avg_line)
+                        .style('stroke', 'black')
+                        .style('stroke-width', 1.5)
+                        .style('fill', 'none')
+                        .attr('class', 'right_path');
+
+                    svg3.append('path')
+                        .datum(incorrect_upper)
+                        .attr('d', avg_line)
+                        .style('stroke', 'gray')
+                        .style('fill', 'none')
+                        .attr('class', 'right_path');
+
+                    svg3.append('path')
+                        .datum(incorrect_lower)
+                        .attr('d', avg_line)
+                        .style('stroke', 'gray')
+                        .style('fill', 'none')
+                        .attr('class', 'right_path');
+                    // title
+                    svg3.selectAll(".right_title").remove();
+                    svg3.append("text")             
+                        .attr("transform", "translate("+w2/2+"," + (padding - 10) + ")")
+                        .style("text-anchor", "middle")
+                        .text("Features for an incorrectly-predicted event patient")
+                        .attr("class", "right_title");
+                } else {
+                    undimAll();
+                }
+                
+            };
+            // function to highlight the circle when mouseover with information box for each circle
+            function highlight(d,i) {
+                var circle = d3.select(this)
+                    .style("stroke","red")
+                    .style("stroke-width","3");
+        
+                d3.select("#index").text(dataset[i]["Index"]);
+                d3.select("#BUN").text(Number(dataset[i]["BLOOD_UREA_NITROGEN_raw"]).toFixed(2));
+                d3.select("#EDRK").text(Number(dataset[i]["n_edrk_raw"]).toFixed(2));
+                d3.select("#HEMO").text(Number(dataset[i]["HEMOGLOBIN_raw"]).toFixed(2));
+                d3.select("#PLATELET").text(Number(dataset[i]["PLATELET_COUNT_raw"]).toFixed(2));
+                d3.select("#GLUCOSE").text(Number(dataset[i]["GLUCOSE_raw"]).toFixed(2));
+                d3.select("#PHO").text(Number(dataset[i]["PHOSPHORUS_raw"]).toFixed(2));
+                d3.select("#Pulse").text(Number(dataset[i]["Pulse_raw"]).toFixed(2));
+                d3.select("#WBCC").text(Number(dataset[i]["WHITE_BLOOD_CELL_COUNT_raw"]).toFixed(2));
+                d3.select("#Resp").text(Number(dataset[i]["Resp_raw"]).toFixed(2));
+                d3.select("#O2").text(Number(dataset[i]["O2_Flow_raw"]).toFixed(2));
+                //console.log(this)
+                d3.select("#tooltip")
+                    .style("top", d3.event.pageY + 5 + "px") 
+                    .style("left", d3.event.pageX - 5 + "px")
+                    .style("visibility","visible");
+        };
+        
+            //function to unhight the circle when mouseout
+            function unhighlight(d,i) {
+                var circle = d3.select(this)
+                    .style("stroke","")
+                    .style("stroke-width","");
+            
+                d3.select("#tooltip")
+                    .style("visibility","hidden");
+        };
+        
+        // filter by event prediction
+        function filterByData(key) {
+            svg.selectAll(".left").remove()         
+            svg.selectAll(".left")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d) {
+                    return xScale(d.PC1);
+                })
+                .attr("cy", function(d) {
+                    return yScale(d.PC2);
+                })
+                .attr("r", 10)
+                .style("opacity", function(d) {
+                    if (key == "Correctly Predicted Event") {
+                        if (d["y"] == 1 && d["y_pred"] == "True") {
+                            return 0.6;
+                        } else {
+                            return 0.1;
+                        }
+                    } else if (key == "Incorrectly Predicted Event") {
+                        if (d["y"] == 1 && d["y_pred"] == "False") {
+                            return 0.6;
+                        } else {
+                            return 0.1;
+                        }      
+                    } else {
+                        if (d["y"] == 1) {
+                            return 0.6;
+                        } else {
+                            return 0.1;
+                        };
+
+                    };
+                })
+                .style("fill", function(d) {
+                    if (d["y"] == 1 && d["y_pred"] == "True") {
+                        return color(cValue[2]);
+                    } else if (d["y"] == 1 && d["y_pred"] == "False") {
+                        return color(cValue[3]);
+                    } else if (d["y"] == 0) {
+                        return color(cValue[0]);
+                    }
+                })
+                .attr("class", "left")
+                .attr("id", function(d) {
+                    return "c"+d.Index; // d3.select does not like numeric ids, added a character at the beginning
+                });
+            
+             svg.selectAll(".left").data(dataset).on("mouseover", highlight).on("mouseout", unhighlight).on('click', isolate_prediction);
+            
+            // draw legend
+            var legend = svg.selectAll(".legend")
+              .data(color.domain())
+              .enter().append("g")
+              .attr("class", "legend")
+              .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+            // draw legend colored rectangles
+            legend.append("circle")
+              .attr("cx", (padding + 25))
+              .attr("cy", (padding + 20))
+              .attr("r", 5)
+              .style("fill", color);
+
+            // draw legend text
+            legend.append("text")
+              .attr("x", (padding + 40))
+              .attr("y", (padding + 20))
+              .attr("dy", ".35em")
+              .style("text-anchor", "left")
+              .text(function(d) { return d;})
+            
+//            svg.append("rect")
+//                .attr("x", (padding + 10))
+//                .attr("y", (padding + 74))
+//                .attr("width", 220)
+//                .attr("height", 50)
+//                .style("fill", "none")
+//                .style("stroke", "gray")
+//                .style("stroke-width", 0.5)
+            
+            svg2.selectAll(".right_bottom").remove();
+            svg3.selectAll(".right_top").remove();
+            svg2.selectAll(".right_title").remove();
+            svg3.selectAll(".right_title").remove();
+            svg2.selectAll(".right_path").remove();
+            svg3.selectAll(".right_path").remove();
+        };
+        // plot all x-axis and y-axis
+		function draw(){
+            //color
+            cValue = ['Non-event', 'Event', 'Correctly Predicted Event', 'Incorrectly Predicted Event']
+            color_values = [d3.schemeCategory10[1], d3.schemeCategory10[0], d3.schemeCategory10[2], d3.schemeCategory10[3]]
+            color = d3.scaleOrdinal(color_values);
+            
+            //scale function
+		    xScale = d3.scaleLinear()
+			.domain([d3.min(dataset, function(d) { return d.PC1; }) - 0.5, d3.max(dataset, function(d) { return d.PC1; }) + 0.5])
+			.range([padding, w - padding * 2]);
+            
+            xScale2 = d3.scaleLinear()
+			.domain([d3.min(instance, function(d) { return d.x; }) - 0.5, d3.max(instance, function(d) { return d.x; }) + 0.5])
+			.range([padding, w2 - padding * 2]);
+            
+		    yScale = d3.scaleLinear()
+			.domain([d3.min(dataset, function(d) { return d.PC2; }) - 0.5, d3.max(dataset, function(d) { return d.PC2; }) + 0.5])
+            .range([h - padding, padding]);
+            
+            yScale2 = d3.scaleLinear()
+			.domain([ymin, ymax])
+            .range([h2 - padding, padding]);
+			
+            // axes for scatter plot
+            var xAxis = d3.axisBottom().scale(xScale).ticks(10);
+            var xAxis_top = d3.axisTop().scale(xScale).ticks(0);
+
+            var yAxis = d3.axisLeft().scale(yScale).ticks(10);
+            var yAxis_right = d3.axisRight().scale(yScale).ticks(0);
+            
+            // axes for two subplots on the right
+            var xAxis2 = d3.axisBottom().scale(xScale2).ticks(10).tickFormat( function(d, i) {
+                return column_to_show[i];
+            });
+            var yAxis2 = d3.axisLeft().scale(yScale2).ticks(10);
+
+            //create svg element
+            svg = d3.select("#area1")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);
+            
+            svg2 = d3.select("#area2")
+                        .append("svg")
+                        .attr("width", w2)
+                        .attr("height", h2);
+            
+            svg3 = d3.select("#area2")
+                         .append("svg")
+                         .attr("width", w2)
+                         .attr("height", h2);
+            
+            // add circles to svg
+            svg.selectAll("circle")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d) {
+                    return xScale(d.PC1);
+                })
+                .attr("cy", function(d) {
+                    return yScale(d.PC2);
+                })
+                .attr("r", 10)
+                .attr("fill", function(d) {
+                if (d.y == 1) {
+                    return color(cValue[1]);
+                } else if (d.y == 0) {
+                    return color(cValue[0]);
+                }})
+                .attr("class", "left")
+                .attr("id", function(d) {
+                    return "c"+d.Index; // d3.select does not like numeric ids, added a character at the beginning
+                });            
+            
+            svg.selectAll(".left").data(dataset).on("mouseover", highlight).on("mouseout", unhighlight).on('click', isolate);
+
+            //x axis
+            svg.append("g")
+                .attr("class", "x axis")	
+                .attr("transform", "translate(0," + (h - padding) + ")")
+                .call(xAxis);
+
+            //x axis top
+            svg.append("g")
+                .attr("class", "x axis")	
+                .attr("transform", "translate(0," + (padding) + ")")
+                .call(xAxis_top);
+            
+            // text label for the x axis
+            svg.append("text")             
+                .attr("transform", "translate("+w/2+"," + (h - padding + 40) + ")")
+                .style("text-anchor", "middle")
+                .text("Principle Component 1 (PC1)");
+        
+            //y axis
+            svg.append("g")
+                .attr("class", "y axis")	
+                .attr("transform", "translate(" + padding + ", 0)")
+                .call(yAxis);
+            
+            //y axis right
+            svg.append("g")
+                .attr("class", "y axis")	
+                .attr("transform", "translate(" + (w - padding*2) + ", 0)")
+                .call(yAxis_right);
+            
+            // text label for the y axis
+            svg.append("text")             
+                .attr("transform", "translate(" + (padding - 25)  + ","+h/2+")rotate(-90)")
+                .style("text-anchor", "middle")
+                .text("Principle Component 2 (PC2)");
+            
+            // draw legend
+            var legend = svg.selectAll(".legend")
+              .data(color.domain())
+              .enter().append("g")
+              .attr("class", "legend")
+              .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+            // draw legend colored rectangles
+            legend.append("circle")
+              .attr("cx", (padding + 25))
+              .attr("cy", (padding + 20))
+              .attr("r", 5)
+              .style("fill", color);
+
+            // draw legend text
+            legend.append("text")
+              .attr("x", (padding + 40))
+              .attr("y", (padding + 20))
+              .attr("dy", ".35em")
+              .style("text-anchor", "left")
+              .text(function(d) { return d;})
+            
+//            svg.append("rect")
+//                .attr("x", (padding + 10))
+//                .attr("y", (padding + 14))
+//                .attr("width", 110)
+//                .attr("height", 50)
+//                .style("fill", "none")
+//                .style("stroke", "gray")
+//                .style("stroke-width", 0.5)
+            
+            // title 
+            svg.append("text")             
+                .attr("transform", "translate(" + (w/2-20) + ","+(padding/2+10)+")")
+                .style("text-anchor", "middle")
+                .text("Principle Component Analysis (PCA)");
+            
+            // ========================================================
+            // for the second figure
+            //x axis
+            svg2.append("g")
+                .attr("class", "x axis")	
+                .attr("transform", "translate(0," + (h2 - padding) + ")")
+                .call(xAxis2)
+                .selectAll("text")
+                    .style("text-anchor", "end")
+                    .attr("dx", "-.5em")
+                    .attr("dy", ".15em")
+                    .attr("transform", "rotate(-25)");
+
+            // text label for the x axis
+            svg2.append("text")             
+                .attr("transform", "translate("+w2/2+"," + (h2 - padding + 40) + ")")
+                .style("text-anchor", "middle")
+                .text("Features");
+
+            //y axis
+            svg2.append("g")
+                .attr("class", "y axis")	
+                .attr("transform","translate(" + padding + ", 0)")
+                .call(yAxis2);
+            
+            // text label for the y axis
+            svg2.append("text")             
+                .attr("transform", "translate(" + (padding - 25)  + ","+h2/2+")rotate(-90)")
+                .style("text-anchor", "middle")
+                .text("Normalized Value");
+            
+            // ========================================================
+            // for the third figure
+            //x axis
+            svg3.append("g")
+                .attr("class", "x axis")	
+                .attr("transform", "translate(0," + (h2 - padding) + ")")
+                .call(xAxis2)
+                .selectAll("text")
+                    .style("text-anchor", "end")
+                    .attr("dx", "-.5em")
+                    .attr("dy", ".15em")
+                    .attr("transform", "rotate(-25)");
+
+            // text label for the x axis
+            svg3.append("text")             
+                .attr("transform", "translate("+w2/2+"," + (h2 - padding + 40) + ")")
+                .style("text-anchor", "middle")
+                .text("Features");
+
+            //y axis
+            svg3.append("g")
+                .attr("class", "y axis")	
+                .attr("transform","translate(" + padding + ", 0)")
+                .call(yAxis2);
+            
+            // text label for the y axis
+            svg3.append("text")             
+                .attr("transform", "translate(" + (padding - 25)  + ","+h2/2+")rotate(-90)")
+                .style("text-anchor", "middle")
+                .text("Normalized Value");
+            
+        };
+            
+        // slider to select a dot
+        function my_slider(i){
+            dimAll();
+        
+            d3.select("#c"+index_array[i]).style("opacity", 1.0).attr("r", 10);
+            
+            instance = []
+            for (var k = 0; k < column_to_plot.length; k++) {
+                a_dict = {}
+                a_dict['x'] = k;
+                a_dict['y'] = +dataset[i][column_to_plot[k]];
+                instance.push(a_dict);
+            };
+
+            if (dataset[i]['y'] == 1) {
+                svg2.selectAll(".right_bottom").remove();
+                svg2.selectAll("circle")
+                .data(instance)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d) {
+                    return xScale2(d.x);
+                })
+                .attr("cy", function(d) {
+                    return h2 - yScale2(d.y);
+                })
+                .attr("r", 5)
+                .attr("fill", color(cValue[1]))
+                .attr("class", "right_bottom");
+            }
+
+            if (dataset[i]['y'] == 0) {
+                svg3.selectAll(".right_top").remove();
+                svg3.selectAll("circle")
+                .data(instance)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d) {
+                    return xScale2(d.x);
+                })
+                .attr("cy", function(d) {
+                    return h2 - yScale2(d.y);
+                })
+                .attr("r", 5)
+                .attr("fill", color(cValue[0]))
+                .attr("class", "right_top");
+            }
+            
+            // plot average
+            var avg_line = d3.line()
+                         .x(function(d) {return xScale2(d.x);})
+                         .y(function(d) {return h2 - yScale2(d.y);})
+                         .curve(d3.curveMonotoneX);
+
+            svg2.selectAll('.right_path').remove();
+            svg2.append('path')
+                .datum(event_avg)
+                .attr('d', avg_line)
+                .style('stroke', 'black')
+                .style('stroke-width', 1.5)
+                .style('fill', 'none')
+                .attr('class', 'right_path');
+
+            svg2.append('path')
+                .datum(event_upper)
+                .attr('d', avg_line)
+                .style('stroke', 'gray')
+                .style('fill', 'none')
+                .attr('class', 'right_path');
+
+            svg2.append('path')
+                .datum(event_lower)
+                .attr('d', avg_line)
+                .style('stroke', 'gray')
+                .style('fill', 'none')
+                .attr('class', 'right_path');
+            // title
+            svg2.selectAll(".right_title").remove();
+            svg2.append("text")             
+                .attr("transform", "translate("+w2/2+"," + (padding - 10) + ")")
+                .style("text-anchor", "middle")
+                .text("Features for an event patient")
+                .attr("class", "right_title");
+            // plot average
+            var avg_line = d3.line()
+                         .x(function(d) {return xScale2(d.x);})
+                         .y(function(d) {return h2 - yScale2(d.y);})
+                         .curve(d3.curveMonotoneX);
+            svg3.selectAll('.right_path').remove();
+            svg3.append('path')
+                .datum(nonevent_avg)
+                .attr('d', avg_line)
+                .style('stroke', 'black')
+                .style('stroke-width', 1.5)
+                .style('fill', 'none')
+                .attr('class', 'right_path');
+
+            svg3.append('path')
+                .datum(nonevent_upper)
+                .attr('d', avg_line)
+                .style('stroke', 'gray')
+                .style('fill', 'none')
+                .attr('class', 'right_path');
+
+            svg3.append('path')
+                .datum(nonevent_lower)
+                .attr('d', avg_line)
+                .style('stroke', 'gray')
+                .style('fill', 'none')
+                .attr('class', 'right_path');
+            // title
+            svg3.selectAll(".right_title").remove();
+            svg3.append("text")             
+                .attr("transform", "translate("+w2/2+"," + (padding - 10) + ")")
+                .style("text-anchor", "middle")
+                .text("Features for an non-event patient")
+                .attr("class", "right_title");
+        };
+		</script>
+        
+	</head>
+    
+    
+	<body>
+        <h1 style="margin-left: 160px"> Features Comparison For Cardiac Patients Deterioration </h1>
+        
+        <div class="row">
+            <div id="area1", class="div1">
+            <p style="margin-left: 40px">
+                <strong>Slide to select a dot:</strong>
+                <input type="range" min="0" max="91" value="0" class="slider" onchange="my_slider(this.value)"/> <br />
+                <button onclick="undimAll_change_color()">Show All</button> 
+                <button onclick="dimAll_change_color()">Hide All</button> <br /> 
+                <strong>Filter by event prediction:</strong> 
+                <select id="prediction" onChange="filterByData(this.value)">
+                    <option value="All">All</option>
+                    <option value="Correctly Predicted Event">Correctly Predicted Event</option>
+                    <option value="Incorrectly Predicted Event">Incorrectly Predicted Event</option>
+                </select> 
+            </p>
+            </div>
+            <div id="area2", class="div2">
+            <!--
+            <p style="margin-left: 20px"> BUN: Blood_Urea_Nitrogen &nbsp edrk: n_edrk &nbsp WBCC: White_Blood_cell_count &nbsp&nbsp&nbsp&nbsp<br />
+                PLATELET: Platelet_count&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp PHO: Phosphorus&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp HEMO: Hemoglobin
+            </p>
+            -->
+            </div>
+        </div>
+        
+        <div id="tooltip">
+            Index: <span id="index" style="font-weight: bold"></span><br />
+            BUN: <span id="BUN"></span><br />
+            EDRK: <span id="EDRK"></span><br />
+            HEMO: <span id="HEMO"></span><br />
+            PLATELET: <span id="PLATELET"></span><br />
+            GLUCOSE: <span id="GLUCOSE"></span><br />
+            PHO: <span id="PHO"></span><br />
+            Pulse: <span id="Pulse"></span><br />
+            WBCC: <span id="WBCC"></span><br />
+            Resp: <span id="Resp"></span><br />
+            O2: <span id="O2"></span><br />
+        </div>
+	</body>
+</html>
