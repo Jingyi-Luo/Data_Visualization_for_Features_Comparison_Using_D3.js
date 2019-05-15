@@ -1,6 +1,6 @@
 # Data Visualization for Features Comparison Using JavaScript Library D3.js
 
-The HTML file is developed using the JavaScript library D3.js to dynamically show and compare the features between two groups of patients using the top-2 principle components (PCs). The interactive interfaces helps view and compare data in a easy and meaningful ways by clicking dots directly, dragging slider, clicking buttons, choosing subgroup through drop-down list. The visualization helps on feature engineering and selection.
+The HTML file is developed in Brackets using the JavaScript library D3.js to dynamically show and compare the features between two groups of patients using the top-2 principle components (PCs). The interactive interfaces helps view and compare data in a easy and meaningful ways by clicking dots directly, dragging slider, clicking buttons, choosing subgroup through drop-down list. The visualization helps on feature engineering and selection.
 
 ## Visualization and Description
 
