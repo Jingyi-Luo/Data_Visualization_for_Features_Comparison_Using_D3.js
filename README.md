@@ -8,6 +8,6 @@ In the interface, when click one dot, correspondingly, the normalized mean and o
 
 When switching from all the patients (orange and blue dots) to the patients only having events for real (green and red dots), just choose the corresponding group from the drop-down list, then the switcing will be fulfilled in the same scatter plot region. It means only one big scatter plot and two small top-10 feature scatter plots exist.
 
-The snapshots for the dynamic interface are shown below.
+The snapshots for the dynamic interface can be found from the following poster.
 
-![poster](https://user-images.githubusercontent.com/42804316/57789791-9b91a280-7707-11e9-87a5-67c504345714.png)
+![Dataviz_project_Poster_github](https://user-images.githubusercontent.com/42804316/57790170-32f6f580-7708-11e9-9aa0-2f12f3e7a5a8.png)
